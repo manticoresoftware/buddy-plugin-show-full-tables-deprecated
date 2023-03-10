@@ -12,13 +12,13 @@
 namespace Manticoresearch\Buddy\Plugin\ShowFullTables;
 
 use Manticoresearch\Buddy\Core\Error\QueryParseError;
-use Manticoresearch\Buddy\Core\Network\Request as NetworkRequest;
-use Manticoresearch\Buddy\Core\Plugin\Request as BaseRequest;
+use Manticoresearch\Buddy\Core\Network\Request;
+use Manticoresearch\Buddy\Core\Plugin\BasePayload;
 
 /**
  * Request for Backup command that has parsed parameters from SQL
  */
-final class Request extends BaseRequest {
+final class Payload extends BasePayload {
 	/**
 	 * @var string $database Manticore single database with no name
 	 *  so it does not matter but for future usage maybe we also parse it
@@ -35,10 +35,10 @@ final class Request extends BaseRequest {
 	public bool $hasCliEndpoint;
 
 	/**
-	 * @param NetworkRequest $request
+	 * @param Request $request
 	 * @return static
 	 */
-	public static function fromNetworkRequest(NetworkRequest $request): static {
+	public static function fromRequest(Request $request): static {
 		$pattern = '#^'
 			. 'show full tables'
 			. '(\s+from\s+`?(?P<database>([a-z][a-z0-9\_]*))`?)?'
@@ -61,10 +61,10 @@ final class Request extends BaseRequest {
 	}
 
 	/**
-	 * @param NetworkRequest $request
+	 * @param Request $request
 	 * @return bool
 	 */
-	public static function hasMatch(NetworkRequest $request): bool {
+	public static function hasMatch(Request $request): bool {
 		return stripos($request->payload, 'show full tables') === 0;
 	}
 }

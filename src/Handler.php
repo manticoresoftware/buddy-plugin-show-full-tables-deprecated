@@ -12,7 +12,7 @@
 namespace Manticoresearch\Buddy\Plugin\ShowFullTables;
 
 use Manticoresearch\Buddy\Core\ManticoreSearch\Client as HTTPClient;
-use Manticoresearch\Buddy\Core\Plugin\FormattableClientQueryExecutor;
+use Manticoresearch\Buddy\Core\Plugin\BaseHandlerWithTableFormatter;
 use Manticoresearch\Buddy\Core\Plugin\TableFormatter;
 use Manticoresearch\Buddy\Core\Task\Task;
 use Manticoresearch\Buddy\Core\Task\TaskResult;
@@ -22,14 +22,14 @@ use parallel\Runtime;
 /**
  * This is the parent class to handle erroneous Manticore queries
  */
-class Executor extends FormattableClientQueryExecutor {
+class Handler extends BaseHandlerWithTableFormatter {
 	/**
 	 *  Initialize the executor
 	 *
-	 * @param Request $request
+	 * @param Payload $payload
 	 * @return void
 	 */
-	public function __construct(public Request $request) {
+	public function __construct(public Payload $payload) {
 	}
 
 	/**
@@ -39,33 +39,33 @@ class Executor extends FormattableClientQueryExecutor {
 	 * @throws RuntimeException
 	 */
 	public function run(Runtime $runtime): Task {
-		$this->manticoreClient->setPath($this->request->path);
+		$this->manticoreClient->setPath($this->payload->path);
 
 		// We run in a thread anyway but in case if we need blocking
 		// We just waiting for a thread to be done
 		$taskFn = static function (
-			Request $request,
+			Payload $payload,
 			HTTPClient $manticoreClient,
 			TableFormatter $tableFormatter
 		): TaskResult {
 			$time0 = hrtime(true);
 			// First, get response from the manticore
 			$query = 'SHOW TABLES';
-			if ($request->like) {
-				$query .= " LIKE '{$request->like}'";
+			if ($payload->like) {
+				$query .= " LIKE '{$payload->like}'";
 			}
 			$resp = $manticoreClient->sendRequest($query);
 			/** @var array<int,array{error:string,data:array<int,array<string,string>>,total?:int,columns?:string}> $result */
 			$result = $resp->getResult();
 			$total = $result[0]['total'] ?? -1;
-			if ($request->hasCliEndpoint) {
+			if ($payload->hasCliEndpoint) {
 				return new TaskResult($tableFormatter->getTable($time0, $result[0]['data'], $total));
 			}
 			return new TaskResult($result);
 		};
 
 		return Task::createInRuntime(
-			$runtime, $taskFn, [$this->request, $this->manticoreClient, $this->tableFormatter]
+			$runtime, $taskFn, [$this->payload, $this->manticoreClient, $this->tableFormatter]
 		)->run();
 	}
 }
