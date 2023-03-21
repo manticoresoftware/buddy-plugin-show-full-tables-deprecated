@@ -59,9 +59,9 @@ class Handler extends BaseHandlerWithTableFormatter {
 			$result = $resp->getResult();
 			$total = $result[0]['total'] ?? -1;
 			if ($payload->hasCliEndpoint) {
-				return new TaskResult($tableFormatter->getTable($time0, $result[0]['data'], $total));
+				return TaskResult::raw($tableFormatter->getTable($time0, $result[0]['data'], $total));
 			}
-			return new TaskResult($result);
+			return TaskResult::raw($result);
 		};
 
 		return Task::createInRuntime(
